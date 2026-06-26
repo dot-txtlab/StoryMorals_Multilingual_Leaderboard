@@ -101,7 +101,26 @@ def _call_openai(client, model, system, user, max_tokens, temperature):
             resp = client.chat.completions.create(**_build("max_completion_tokens"))
         else:
             raise
-    return resp.choices[0].message.content or ""
+    return _extract_content(resp)
+
+
+def _extract_content(resp) -> str:
+    """Pull text out of a chat-completion, surfacing *why* it's empty.
+
+    Safety blocks (Gemini etc.) return a choice whose `message` is None, and
+    reasoning models can exhaust the token budget — both yield no content. We
+    raise a ProviderError naming the finish_reason instead of crashing on None.
+    """
+    choices = getattr(resp, "choices", None)
+    if not choices:
+        raise ProviderError("no choices in response")
+    choice = choices[0]
+    msg = getattr(choice, "message", None)
+    content = getattr(msg, "content", None) if msg is not None else None
+    if content:
+        return content
+    fr = getattr(choice, "finish_reason", None)
+    raise ProviderError(f"no content (finish_reason={fr})")
 
 
 def _call_anthropic(client, model, system, user, max_tokens, temperature):
