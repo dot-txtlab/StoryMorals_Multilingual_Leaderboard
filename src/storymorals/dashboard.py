@@ -43,10 +43,10 @@ _TEMPLATE = r"""<!doctype html>
   .rank{color:var(--mut)} .name{font-weight:600}
   .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
   .badge{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600}
-  .ideal{background:rgba(61,220,151,.16);color:var(--good)}
-  .flattener{background:rgba(255,180,60,.16);color:#ffb43c}
-  .weak{background:rgba(120,160,255,.16);color:#8aa6ff}
-  .behind{background:rgba(255,107,107,.14);color:var(--bad)}
+  .ideal{background:rgba(61,220,151,.16);color:#3ddc97}
+  .near{background:rgba(255,224,102,.16);color:#ffe066}
+  .off{background:rgba(255,159,67,.16);color:#ff9f43}
+  .far-off{background:rgba(255,107,107,.16);color:#ff6b6b}
   .legend{color:var(--mut);font-size:12.5px;margin-top:10px}
   .langlegend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
   .lchip{font-size:12px;color:var(--mut);background:#0c0e14;border:1px solid var(--line);
@@ -66,11 +66,13 @@ _TEMPLATE = r"""<!doctype html>
   <p class="meta" id="meta"></p>
 
   <div class="card">
-    <h2>The cultural-alignment map</h2>
-    <p class="hint">▲ higher = morals more human-like (within a language). ▶ further right = more cross-cultural
-      diversity (less flattening). The dashed lines are the human baselines; the green <b>ideal zone</b>
-      (top-right) is human-like <i>and</i> culturally diverse.</p>
-    <div id="map" style="height:540px"></div>
+    <h2>Distance to the human point</h2>
+    <p class="hint">The goal is to <b>match</b> humans, not beat them — sit at the crosshair (the human baseline).
+      Axes are in <b>human standard deviations from the baseline</b>: ▲/▼ = more/less similar to human morals
+      within a language; ◀ = flattening (less cross-cultural variation than humans). Dots are colored by
+      model family; the green arcs mark the <b>ideal</b> (≤0.5 SD) and <b>near</b> (≤1 SD) zones around the
+      human point. Closest to the crosshair wins.</p>
+    <div id="map" style="height:560px"></div>
   </div>
 
   <div class="card">
@@ -85,55 +87,76 @@ _TEMPLATE = r"""<!doctype html>
 
   <div class="card">
     <h2>Full standings</h2>
-    <p class="hint">Click a column to sort. Composite = normalized alignment + normalized diversity.</p>
+    <p class="hint">Click a column to sort. <b>Distance</b> = human standard deviations from the human point
+      (lower = better); ranked by it.</p>
     <table id="tbl"><thead><tr>
       <th data-k="rank">#</th><th data-k="display">Model</th><th data-k="provider">Provider</th>
       <th data-k="alignment_mean">Alignment</th><th data-k="alignment_gap">Δ human</th>
       <th data-k="diversity_mean">Cross-lang sim</th><th data-k="diversity_gap">Flattening</th>
-      <th data-k="composite">Composite</th><th data-k="verdict">Verdict</th>
+      <th data-k="distance">Distance (SD)</th><th data-k="verdict">Zone</th>
     </tr></thead><tbody></tbody></table>
     <p class="legend">
-      <span class="badge ideal">ideal</span> human-like &amp; diverse &nbsp;
-      <span class="badge flattener">flattener</span> human-like but collapses cultural variety &nbsp;
-      <span class="badge weak">weak</span> diverse mainly due to low quality &nbsp;
-      <span class="badge behind">behind</span> below the human band
+      <span class="badge ideal">ideal</span> ≤0.5 SD &nbsp;
+      <span class="badge near">near</span> 0.5–1 SD &nbsp;
+      <span class="badge off">off</span> 1–1.5 SD &nbsp;
+      <span class="badge far-off">far-off</span> &gt;1.5 SD &nbsp; · hover a row's zone for how it misses
     </p>
   </div>
-  <p class="meta">Method: cosine similarity over multilingual sentence embeddings, mixed-effects gaps vs. human baselines
-    (Wu &amp; Piper, Figs 3–4). Embedders: <span id="emb"></span>.</p>
+  <p class="meta">Method: cosine similarity over multilingual sentence embeddings (Wu &amp; Piper, Figs 3–4).
+    Score = Euclidean distance to the human point, each axis standardized by the human standard deviation.
+    Embedders: <span id="emb"></span>.</p>
 </div>
 <script>
 const DATA = __DATA__;
 const COLORS = __COLORS__;
 const rows = DATA.rows, B = DATA.baselines;
-const pm = (m, sd) => sd==null ? `${m}` : `${m} ± ${sd}`;
 document.getElementById('meta').textContent =
-  `${DATA.n_models} models · human within-language baseline ${pm(B.within, B.within_sd)} · ` +
-  `human cross-language baseline ${pm(B.cross, B.cross_sd)} · updated ${DATA.generated_at}`;
+  `${DATA.n_models} models · human within-language ${B.within} ±${B.within_sd} · ` +
+  `human cross-language ${B.cross} ±${B.cross_sd} (±1 SD = inner ring) · updated ${DATA.generated_at}`;
 document.getElementById('emb').textContent = DATA.embedders.join(', ');
 const col = p => COLORS[p] || '#9ca3af';
+// 4-tier zone — must stay in sync with _zone() in leaderboard.py.
+const zoneOf = d => d <= 0.5 ? 'ideal' : d <= 1 ? 'near' : d <= 1.5 ? 'off' : 'far-off';
 
-// ---- Map: x = diversity (baseline_cross - mm_mean, higher=more diverse), y = alignment mean
-const xs = rows.map(r => +(B.cross - r.diversity_mean).toFixed(4));
-const ys = rows.map(r => r.alignment_mean);
-const xmin = Math.min(0, ...xs)-.03, xmax = Math.max(0, ...xs)+.03;
-const ymin = Math.min(B.within, ...ys)-.03, ymax = Math.max(B.within, ...ys)+.03;
+// ---- Map: distance to the human point, in SD units. Origin = human.
+// x = -x_se so rightward = toward human diversity (left = flattening); y = y_se.
+// Axes autorange INDEPENDENTLY so both the (wide) flattening axis and the
+// (narrow) alignment axis fill the frame — the top-aligned model sits near the
+// top. Markers keep their model-family (provider) color; the 0.5/1 SD rings are
+// drawn as circle shapes that render as clipped ellipse ARCS here — still the
+// correct distance contours, so a dot inside an arc is genuinely within that SD.
+const px = rows.map(r => -r.x_se), py = rows.map(r => r.y_se);
+const cd = rows.map(r => [r.display, r.distance, r.alignment_mean, r.diversity_mean, zoneOf(r.distance)]);
+const ring = (rad, color, fill) => ({type:'circle', xref:'x', yref:'y',
+  x0:-rad, y0:-rad, x1:rad, y1:rad, line:{color, width:1.2, dash:'dot'}, fillcolor:fill, layer:'below'});
+// Explicit ranges from the data + the human point (origin), so the frame hugs
+// the cloud and the rings clip rather than driving the range. Small y-pad keeps
+// the top model near the top. Works for any result set.
+const PADX = 0.2, PADY = 0.06;
+const xlo = Math.min(...px, 0) - PADX, xhi = Math.max(...px, 0) + PADX;
+const ylo = Math.min(...py, 0) - PADY, yhi = Math.max(...py, 0) + PADY;
 Plotly.newPlot('map', [
-  {x:xs, y:ys, text:rows.map(r=>r.display), mode:'markers+text', textposition:'top center',
-   textfont:{color:'#cdd3df',size:11},
+  {x:px, y:py, customdata:cd, text:rows.map(r=>r.display),
+   mode:'markers+text', textposition:'top center', textfont:{color:'#cdd3df',size:10},
    marker:{size:13, color:rows.map(r=>col(r.provider)), line:{color:'#0f1117',width:1.5}},
-   hovertemplate:'%{text}<br>alignment %{y:.3f}<br>diversity %{x:.3f}<extra></extra>'}
+   hovertemplate:'%{customdata[0]}<br>distance %{customdata[1]} SD (%{customdata[4]})'
+     +'<br>align %{customdata[2]:.3f} · cross-sim %{customdata[3]:.3f}<extra></extra>'},
+  {x:[0], y:[0], mode:'markers+text', text:['human'], textposition:'bottom center',
+   textfont:{color:'#3ddc97',size:12}, marker:{symbol:'star', size:15, color:'#3ddc97'},
+   hovertemplate:'human baseline (target)<extra></extra>'}
 ],{
-  paper_bgcolor:'#171a23', plot_bgcolor:'#171a23', font:{color:'#9aa3b2'},
-  margin:{l:60,r:20,t:30,b:55},
-  xaxis:{title:'◀ flattening   ·   cross-cultural diversity   ·   more diverse ▶', range:[xmin,xmax], zeroline:false, gridcolor:'#262b38'},
-  yaxis:{title:'within-language human-likeness ▲', range:[ymin,ymax], gridcolor:'#262b38'},
+  showlegend:false, paper_bgcolor:'#171a23', plot_bgcolor:'#171a23', font:{color:'#9aa3b2'},
+  margin:{l:60,r:30,t:20,b:55},
+  xaxis:{title:'◀ flattening  ·  cross-cultural diversity (SD from human)  ·  human level ▶',
+         range:[xlo, xhi], zeroline:false, gridcolor:'#262b38'},
+  yaxis:{title:'within-language similarity (SD from human)',
+         range:[ylo, yhi], zeroline:false, gridcolor:'#262b38'},
   shapes:[
-    {type:'rect', x0:0, x1:xmax, y0:B.within, y1:ymax, fillcolor:'rgba(61,220,151,.08)', line:{width:0}},
-    {type:'line', x0:0, x1:0, y0:ymin, y1:ymax, line:{color:'#9aa3b2', dash:'dash', width:1}},
-    {type:'line', x0:xmin, x1:xmax, y0:B.within, y1:B.within, line:{color:'#9aa3b2', dash:'dash', width:1}}
-  ],
-  annotations:[{x:xmax, y:ymax, xanchor:'right', yanchor:'top', text:'ideal zone', showarrow:false, font:{color:'#3ddc97',size:12}}]
+    ring(1, '#5b6473', 'rgba(0,0,0,0)'),
+    ring(0.5, '#3ddc97', 'rgba(61,220,151,.08)'),
+    {type:'line', xref:'x', x0:0, x1:0, yref:'paper', y0:0, y1:1, line:{color:'#9aa3b2', dash:'dash', width:1}},
+    {type:'line', xref:'paper', x0:0, x1:1, yref:'y', y0:0, y1:0, line:{color:'#9aa3b2', dash:'dash', width:1}}
+  ]
 },{responsive:true,displayModeBar:false});
 
 // ---- Heatmap: per-language alignment advantage (Fig 9 style)
@@ -183,8 +206,8 @@ function render(data){
       <td>${r.alignment_gap>=0?'+':''}${fmt(r.alignment_gap)}</td>
       <td>${fmt(r.diversity_mean)}</td>
       <td>${r.diversity_gap>=0?'+':''}${fmt(r.diversity_gap)}</td>
-      <td>${fmt(r.composite)}</td>
-      <td><span class="badge ${r.verdict}">${r.verdict}</span></td>`;
+      <td>${fmt(r.distance)}</td>
+      <td><span class="badge ${zoneOf(r.distance)}" title="miss: ${r.miss}">${zoneOf(r.distance)}</span></td>`;
     tb.appendChild(tr);
   }
 }

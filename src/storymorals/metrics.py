@@ -178,6 +178,18 @@ def evaluate(long_df: pd.DataFrame, emb: dict[str, np.ndarray]) -> dict:
     base_within_sd = float(hh_w_s["sim"].std(ddof=1))
     base_cross_sd = float(hh_c_s["sim"].std(ddof=1))
 
+    # Cluster standard error of the human baseline: stories (not pairs) are the
+    # independent unit, so SE = SD(story-level means) / sqrt(n_stories). This is
+    # the tight, design-honest precision of the human mean (~the paper's SE),
+    # ~1/3 of the raw pairwise SD. It sets the bullseye radius + distance units.
+    def _cluster_se(df):
+        means = df.groupby("story")["sim"].mean()
+        n = means.shape[0]
+        return float(means.std(ddof=1) / (n ** 0.5)) if n > 1 else float("nan")
+
+    base_within_se = _cluster_se(hh_w_s)
+    base_cross_se = _cluster_se(hh_c_s)
+
     models = sorted(set(hm_w_s["model"]).union(mm_c_s["model"]))
     results = {}
     for m in models:
@@ -232,7 +244,8 @@ def evaluate(long_df: pd.DataFrame, emb: dict[str, np.ndarray]) -> dict:
         }
     return {
         "baselines": {"within": base_within, "cross": base_cross,
-                      "within_sd": base_within_sd, "cross_sd": base_cross_sd},
+                      "within_sd": base_within_sd, "cross_sd": base_cross_sd,
+                      "within_se": base_within_se, "cross_se": base_cross_se},
         "n_embedders": len(emb),
         "embedders": list(emb.keys()),
         "models": results,
