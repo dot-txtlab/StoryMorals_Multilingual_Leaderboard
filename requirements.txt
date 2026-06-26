@@ -1,0 +1,16 @@
+# Core data
+pandas>=2.0
+numpy>=1.24
+pyyaml>=6.0
+tqdm>=4.66
+python-dotenv>=1.0
+
+# Embeddings + stats
+sentence-transformers>=3.0
+scikit-learn>=1.3
+scipy>=1.11
+statsmodels>=0.14
+
+# Model-provider SDKs (frontier APIs)
+openai>=1.40          # also used for Gemini / DeepSeek / Qwen / Lambda (OpenAI-compatible endpoints)
+anthropic>=0.40       # Claude

@@ -1,0 +1,22 @@
+Imagine that you are a native speaker
+of {LANGUAGE} who grew up in {COUNTRY}.
+You will be presented with a story in
+{LANGUAGE}. Your goal is to output the
+moral of the story in {LANGUAGE} — a
+single, complete sentence that clearly
+expresses the main lesson or message of
+the story.
+This moral should:
+• Reflect values that are important
+and widely accepted in your
+culture.
+• Use phrasing or concepts that
+would feel familiar and culturally
+appropriate to someone from
+{COUNTRY}.
+• Stay relevant to the actual events
+and message of the story.
+Here is the story (remember that your
+output should just be the moral of the
+story in {LANGUAGE}):
+{PASSAGE}

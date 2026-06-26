@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Multilingual Story-Morals Leaderboard</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  :root{--bg:#0f1117;--card:#171a23;--ink:#e7e9ee;--mut:#9aa3b2;--line:#262b38;--good:#3ddc97;--bad:#ff6b6b}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:30px;margin:0 0 4px} .sub{color:var(--ink);font-size:17px;margin:0 0 12px}
+  .desc{color:var(--mut);font-size:14px;max-width:780px;margin:0 0 10px}
+  .cite{display:block;margin-top:8px;font-size:12.5px;color:#7e879a}
+  .meta{color:var(--mut);font-size:13px;margin-bottom:24px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:24px}
+  h2{font-size:18px;margin:0 0 4px} .hint{color:var(--mut);font-size:13px;margin:0 0 14px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:right;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:nth-child(2),td:nth-child(2){text-align:left} th{color:var(--mut);font-weight:600;cursor:pointer;user-select:none}
+  th:hover{color:var(--ink)} tr:hover td{background:#1c2030}
+  .rank{color:var(--mut)} .name{font-weight:600}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
+  .badge{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600}
+  .ideal{background:rgba(61,220,151,.16);color:var(--good)}
+  .flattener{background:rgba(255,180,60,.16);color:#ffb43c}
+  .weak{background:rgba(120,160,255,.16);color:#8aa6ff}
+  .behind{background:rgba(255,107,107,.14);color:var(--bad)}
+  .legend{color:var(--mut);font-size:12.5px;margin-top:10px}
+  .langlegend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .lchip{font-size:12px;color:var(--mut);background:#0c0e14;border:1px solid var(--line);
+    padding:3px 9px;border-radius:7px} .lchip b{color:var(--ink);font-weight:600}
+  code{background:#0c0e14;padding:1px 6px;border-radius:5px;color:#c9d2e3}
+  a{color:#8aa6ff}
+</style></head><body><div class="wrap">
+  <h1>Lessons Without Borders — Multilingual Story-Morals Leaderboard</h1>
+  <p class="sub">Do language models capture the cultural diversity of human story morals — or just restate one lesson in many languages?</p>
+  <p class="desc">Story morals are the short lessons readers infer from narratives, and the lesson drawn from the same story varies across cultures.
+    This leaderboard adapts the evaluation of <b>Wu &amp; Piper (2026)</b> to a public, periodically-updated board: using a dataset of
+    human-written morals across 14 language–culture pairs, it measures whether each model's morals (1) match human interpretations
+    <i>within</i> a language and (2) preserve the cross-cultural variation humans show, rather than collapsing to a single moral expressed
+    in 14 languages. A model succeeds by being human-like <i>and</i> culturally diverse.
+    <span class="cite">Sophie Wu &amp; Andrew Piper, <i>“Lessons Without Borders: Evaluating Cultural Alignment of LLMs Using Multilingual
+    Story Moral Generation.”</i> <a href="https://arxiv.org/pdf/2604.08797" target="_blank" rel="noopener">arXiv:2604.08797</a>.</span></p>
+  <p class="meta" id="meta"></p>
+
+  <div class="card">
+    <h2>The cultural-alignment map</h2>
+    <p class="hint">▲ higher = morals more human-like (within a language). ▶ further right = more cross-cultural
+      diversity (less flattening). The dashed lines are the human baselines; the green <b>ideal zone</b>
+      (top-right) is human-like <i>and</i> culturally diverse.</p>
+    <div id="map" style="height:540px"></div>
+  </div>
+
+  <div class="card">
+    <h2>Alignment by language</h2>
+    <p class="hint">How far each model's morals sit <b>above</b> (green) or
+      <b>below</b> (red) typical human–human agreement <i>within</i> that language. <b>*</b> marks a
+      statistically significant difference (p&lt;.05, clustered by story). Reveals where a model is human-like
+      and where it slips.</p>
+    <div id="heat"></div>
+    <div id="langlegend" class="langlegend"></div>
+  </div>
+
+  <div class="card">
+    <h2>Full standings</h2>
+    <p class="hint">Click a column to sort. Composite = normalized alignment + normalized diversity.</p>
+    <table id="tbl"><thead><tr>
+      <th data-k="rank">#</th><th data-k="display">Model</th><th data-k="provider">Provider</th>
+      <th data-k="alignment_mean">Alignment</th><th data-k="alignment_gap">Δ human</th>
+      <th data-k="diversity_mean">Cross-lang sim</th><th data-k="diversity_gap">Flattening</th>
+      <th data-k="composite">Composite</th><th data-k="verdict">Verdict</th>
+    </tr></thead><tbody></tbody></table>
+    <p class="legend">
+      <span class="badge ideal">ideal</span> human-like &amp; diverse &nbsp;
+      <span class="badge flattener">flattener</span> human-like but collapses cultural variety &nbsp;
+      <span class="badge weak">weak</span> diverse mainly due to low quality &nbsp;
+      <span class="badge behind">behind</span> below the human band
+    </p>
+  </div>
+  <p class="meta">Method: cosine similarity over multilingual sentence embeddings, mixed-effects gaps vs. human baselines
+    (Wu &amp; Piper, Figs 3–4). Embedders: <span id="emb"></span>.</p>
+</div>
+<script>
+const DATA = {"generated_at": "2026-06-26T15:58:00+00:00", "baselines": {"within": 0.4478, "cross": 0.4314, "within_sd": 0.139, "cross_sd": 0.1332}, "embedders": ["bge-m3", "labse"], "n_models": 1, "paper_gpt_source": "gpt-4o (paper)", "language_order": ["ar", "cs", "de", "en", "fr", "he", "hu", "it", "jp", "ko", "nl", "pl", "pt", "sv"], "languages": {"ar": {"name": "Arabic", "country": "Egypt"}, "cs": {"name": "Czech", "country": "Czech Republic"}, "de": {"name": "German", "country": "Germany"}, "en": {"name": "English", "country": "United States"}, "fr": {"name": "French", "country": "France"}, "he": {"name": "Hebrew", "country": "Israel"}, "hu": {"name": "Hungarian", "country": "Hungary"}, "it": {"name": "Italian", "country": "Italy"}, "jp": {"name": "Japanese", "country": "Japan"}, "ko": {"name": "Korean", "country": "Korea"}, "nl": {"name": "Dutch", "country": "Netherlands"}, "pl": {"name": "Polish", "country": "Poland"}, "pt": {"name": "Portuguese", "country": "Brazil"}, "sv": {"name": "Swedish", "country": "Sweden"}}, "rows": [{"id": "gpt-4o (paper)", "display": "GPT-4o (paper)", "provider": "openai", "alignment_mean": 0.4776, "alignment_gap": 0.0299, "alignment_coef": 0.0222, "alignment_ci": [0.0102, 0.0342], "alignment_p": 0.0002965230285327778, "diversity_mean": 0.6463, "diversity_gap": 0.2149, "diversity_coef": 0.2032, "diversity_ci": [0.1976, 0.2088], "diversity_p": 0.0, "composite": 1.0, "verdict": "flattener", "by_language": {"ar": {"advantage": -0.0049, "p": 0.8572918737646704, "n": 42}, "cs": {"advantage": 0.0574, "p": 0.008507325330748534, "n": 42}, "de": {"advantage": 0.0156, "p": 0.6557537933548958, "n": 42}, "en": {"advantage": 0.0152, "p": 0.7694004474580759, "n": 42}, "fr": {"advantage": 0.0015, "p": 0.9347173914658792, "n": 42}, "he": {"advantage": 0.0933, "p": 0.0006554753755766339, "n": 42}, "hu": {"advantage": 0.0562, "p": 0.024682831103844116, "n": 42}, "it": {"advantage": 0.0095, "p": 0.6755833054804381, "n": 42}, "jp": {"advantage": 0.0251, "p": 0.3263576095286791, "n": 42}, "ko": {"advantage": 0.0236, "p": 0.2946272581520757, "n": 42}, "nl": {"advantage": -0.0074, "p": 0.8437873847334922, "n": 42}, "pl": {"advantage": -0.0154, "p": 0.49541925016074095, "n": 42}, "pt": {"advantage": -0.0205, "p": 0.39835090048588906, "n": 42}, "sv": {"advantage": 0.024, "p": 0.13152713669131827, "n": 42}}, "rank": 1}]};
+const COLORS = {"openai": "#10a37f", "google": "#4285f4", "anthropic": "#d97757", "alibaba": "#7b2ff7", "deepseek": "#2563eb", "lambda": "#6b7280", "\u2014": "#9ca3af"};
+const rows = DATA.rows, B = DATA.baselines;
+const pm = (m, sd) => sd==null ? `${m}` : `${m} ± ${sd}`;
+document.getElementById('meta').textContent =
+  `${DATA.n_models} models · human within-language baseline ${pm(B.within, B.within_sd)} · ` +
+  `human cross-language baseline ${pm(B.cross, B.cross_sd)} · updated ${DATA.generated_at}`;
+document.getElementById('emb').textContent = DATA.embedders.join(', ');
+const col = p => COLORS[p] || '#9ca3af';
+
+// ---- Map: x = diversity (baseline_cross - mm_mean, higher=more diverse), y = alignment mean
+const xs = rows.map(r => +(B.cross - r.diversity_mean).toFixed(4));
+const ys = rows.map(r => r.alignment_mean);
+const xmin = Math.min(0, ...xs)-.03, xmax = Math.max(0, ...xs)+.03;
+const ymin = Math.min(B.within, ...ys)-.03, ymax = Math.max(B.within, ...ys)+.03;
+Plotly.newPlot('map', [
+  {x:xs, y:ys, text:rows.map(r=>r.display), mode:'markers+text', textposition:'top center',
+   textfont:{color:'#cdd3df',size:11},
+   marker:{size:13, color:rows.map(r=>col(r.provider)), line:{color:'#0f1117',width:1.5}},
+   hovertemplate:'%{text}<br>alignment %{y:.3f}<br>diversity %{x:.3f}<extra></extra>'}
+],{
+  paper_bgcolor:'#171a23', plot_bgcolor:'#171a23', font:{color:'#9aa3b2'},
+  margin:{l:60,r:20,t:30,b:55},
+  xaxis:{title:'◀ flattening   ·   cross-cultural diversity   ·   more diverse ▶', range:[xmin,xmax], zeroline:false, gridcolor:'#262b38'},
+  yaxis:{title:'within-language human-likeness ▲', range:[ymin,ymax], gridcolor:'#262b38'},
+  shapes:[
+    {type:'rect', x0:0, x1:xmax, y0:B.within, y1:ymax, fillcolor:'rgba(61,220,151,.08)', line:{width:0}},
+    {type:'line', x0:0, x1:0, y0:ymin, y1:ymax, line:{color:'#9aa3b2', dash:'dash', width:1}},
+    {type:'line', x0:xmin, x1:xmax, y0:B.within, y1:B.within, line:{color:'#9aa3b2', dash:'dash', width:1}}
+  ],
+  annotations:[{x:xmax, y:ymax, xanchor:'right', yanchor:'top', text:'ideal zone', showarrow:false, font:{color:'#3ddc97',size:12}}]
+},{responsive:true,displayModeBar:false});
+
+// ---- Heatmap: per-language alignment advantage (Fig 9 style)
+const langs = (DATA.language_order && DATA.language_order.length)
+  ? DATA.language_order
+  : [...new Set(rows.flatMap(r=>Object.keys(r.by_language||{})))].sort();
+const hmRows = [...rows].sort((a,b)=>a.rank-b.rank);   // rank 1 first
+const z = hmRows.map(r => langs.map(L => {
+  const c = (r.by_language||{})[L]; return c && c.advantage!=null ? c.advantage : null;}));
+const cellTxt = hmRows.map(r => langs.map(L => {
+  const c = (r.by_language||{})[L];
+  return (c && c.p!=null && c.p<0.05) ? '∗' : '';}));
+const amax = Math.max(0.001, ...z.flat().filter(v=>v!=null).map(Math.abs));
+Plotly.newPlot('heat', [{
+  type:'heatmap', x:langs, y:hmRows.map(r=>r.display), z:z,
+  text:cellTxt, texttemplate:'%{text}', textfont:{size:15,color:'#0f1117'},
+  zmid:0, zmin:-amax, zmax:amax,
+  colorscale:[[0,'#c0392b'],[0.5,'#222633'],[1,'#3ddc97']],
+  xgap:2, ygap:2,
+  colorbar:{title:{text:'Δ vs human',side:'right'},thickness:12,len:.75,tickfont:{color:'#9aa3b2'}},
+  hovertemplate:'%{y} · %{x}<br>advantage %{z:.3f}<extra></extra>'
+}],{
+  paper_bgcolor:'#171a23', plot_bgcolor:'#171a23', font:{color:'#9aa3b2'},
+  margin:{l:150,r:20,t:10,b:36}, height:Math.max(160, hmRows.length*34+90),
+  yaxis:{automargin:true, autorange:'reversed'}, xaxis:{side:'top'}
+},{responsive:true,displayModeBar:false});
+
+// ---- Language legend
+const ll = document.getElementById('langlegend');
+ll.innerHTML = langs.map(L=>{
+  const m = (DATA.languages||{})[L];
+  const label = m ? m.name : L;
+  return `<span class="lchip"><b>${L}</b> · ${label}</span>`;
+}).join('');
+
+// ---- Table
+const tb = document.querySelector('#tbl tbody');
+const fmt = (v)=> (v===null||v===undefined||Number.isNaN(v))?'—':v;
+function render(data){
+  tb.innerHTML='';
+  for(const r of data){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="rank">${r.rank}</td>
+      <td class="name"><span class="dot" style="background:${col(r.provider)}"></span>${r.display}</td>
+      <td>${r.provider}</td>
+      <td>${fmt(r.alignment_mean)}</td>
+      <td>${r.alignment_gap>=0?'+':''}${fmt(r.alignment_gap)}</td>
+      <td>${fmt(r.diversity_mean)}</td>
+      <td>${r.diversity_gap>=0?'+':''}${fmt(r.diversity_gap)}</td>
+      <td>${fmt(r.composite)}</td>
+      <td><span class="badge ${r.verdict}">${r.verdict}</span></td>`;
+    tb.appendChild(tr);
+  }
+}
+render(rows);
+let asc={};
+document.querySelectorAll('#tbl th').forEach(th=>th.onclick=()=>{
+  const k=th.dataset.k; asc[k]=!asc[k];
+  const s=[...rows].sort((a,b)=>{const x=a[k],y=b[k];
+    return (typeof x==='number'?x-y:String(x).localeCompare(String(y)))*(asc[k]?1:-1);});
+  render(s);
+});
+</script></body></html>

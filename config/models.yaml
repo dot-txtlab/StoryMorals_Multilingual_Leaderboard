@@ -1,0 +1,63 @@
+# ============================================================================
+#  THE MODEL LIST  —  edit this file to add / remove / re-run models.
+# ============================================================================
+# To add a model: copy a block, set `id` (the provider's exact API model string),
+# pick a `provider` from the providers section below, give it a `display` name,
+# and (re-)run the pipeline. Set `enabled: false` to keep a model in the file
+# without running it.
+#
+# `id` MUST be the provider's real API model string. The names below come from
+# models.txt; if a provider's actual string differs, fix it here — a wrong id
+# just makes that one model fail (it's marked errored, others still run).
+#
+# Provider routing + the API key each one needs lives in `providers` at the
+# bottom. Keys are read from environment variables / .env (see .env.example).
+# ----------------------------------------------------------------------------
+
+defaults:
+  max_tokens: 1024
+  # temperature: omitted on purpose. The paper used each model's *default*
+  # temperature, and several current models (e.g. Claude Opus 4.8) reject an
+  # explicit temperature. Set `temperature:` here or per-model only if needed.
+  concurrency: 8          # parallel API calls per model during generation
+  max_retries: 5          # exponential-backoff retries per passage on transient errors
+  request_timeout: 120    # seconds per API call before it's treated as a (retryable) failure
+
+models:
+  # ---- OpenAI (GPT) ----
+  - {id: gpt-5.5,                    provider: openai,    display: "GPT-5.5",            enabled: true}
+  - {id: gpt-5.4,                    provider: openai,    display: "GPT-5.4",            enabled: true}
+  - {id: gpt-5.4-mini,              provider: openai,    display: "GPT-5.4 mini",       enabled: true}
+
+  # ---- Google (Gemini) ----
+  - {id: gemini-3.1-pro-preview,    provider: google,    display: "Gemini 3.1 Pro",     enabled: true}
+  - {id: gemini-3-flash-preview,    provider: google,    display: "Gemini 3 Flash",     enabled: true}
+  - {id: gemini-3.1-flash-lite,     provider: google,    display: "Gemini 3.1 Flash-Lite", enabled: true}
+
+  # ---- Alibaba (Qwen, proprietary tiers via DashScope) ----
+  - {id: qwen3.7-max,               provider: alibaba,   display: "Qwen3.7 Max",        enabled: true}
+  - {id: qwen3.7-plus,              provider: alibaba,   display: "Qwen3.7 Plus",       enabled: true}
+
+  # ---- Anthropic (Claude) ----
+  - {id: claude-opus-4-8,             provider: anthropic, display: "Claude Opus 4.8",    enabled: true}
+  - {id: claude-sonnet-4-6,           provider: anthropic, display: "Claude Sonnet 4.6",  enabled: true}
+  - {id: claude-haiku-4-5-20251001,   provider: anthropic, display: "Claude Haiku 4.5",   enabled: true}
+
+  # ---- DeepSeek ----
+  - {id: deepseek-v4-pro,           provider: deepseek,  display: "DeepSeek V4 Pro",    enabled: true}
+  - {id: deepseek-v4-flash,         provider: deepseek,  display: "DeepSeek V4 Flash",  enabled: true}
+
+  # ---- Open-source via Lambda Inference API (phase 2 — disabled for now) ----
+  # - {id: "Qwen/Qwen3-235B-A22B-Instruct", provider: lambda, display: "Qwen3 235B", enabled: false}
+
+# ----------------------------------------------------------------------------
+#  Provider routing. All providers except Anthropic speak the OpenAI-compatible
+#  chat-completions API, so they share one client with a different base_url.
+# ----------------------------------------------------------------------------
+providers:
+  openai:    {sdk: openai,    api_key_env: OPENAI_API_KEY,    base_url: null}
+  google:    {sdk: openai,    api_key_env: GEMINI_API_KEY,    base_url: "https://generativelanguage.googleapis.com/v1beta/openai/"}
+  alibaba:   {sdk: openai,    api_key_env: DASHSCOPE_API_KEY, base_url: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"}
+  deepseek:  {sdk: openai,    api_key_env: DEEPSEEK_API_KEY,  base_url: "https://api.deepseek.com"}
+  lambda:    {sdk: openai,    api_key_env: LAMBDA_API_KEY,    base_url: "https://api.lambda.ai/v1"}
+  anthropic: {sdk: anthropic, api_key_env: ANTHROPIC_API_KEY, base_url: null}

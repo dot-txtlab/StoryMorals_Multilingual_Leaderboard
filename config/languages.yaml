@@ -1,0 +1,26 @@
+# Language -> (display name, culture/country for socio-demographic prompting).
+#
+# These are the 14 language-culture pairs from Wu & Piper, Table 3.
+# IMPORTANT: `country` here is the CULTURE associated with the *language*
+# (the region the human annotators were recruited from), NOT the story's
+# country of origin. The generation prompt asks the model to role-play
+# "a native speaker of {language} who grew up in {country}", so it must use
+# the language's culture. e.g. passage_id "italy_ar" (an Italian story shown
+# in Arabic) -> language Arabic, country Egypt.
+#
+# This file is fixed; it only changes if the human dataset adds languages.
+
+ar: {name: Arabic,     country: Egypt}
+cs: {name: Czech,      country: Czech Republic}
+de: {name: German,     country: Germany}
+en: {name: English,    country: United States}
+fr: {name: French,     country: France}
+he: {name: Hebrew,     country: Israel}
+hu: {name: Hungarian,  country: Hungary}
+it: {name: Italian,    country: Italy}
+jp: {name: Japanese,   country: Japan}
+ko: {name: Korean,     country: Korea}
+nl: {name: Dutch,      country: Netherlands}
+pl: {name: Polish,     country: Poland}
+pt: {name: Portuguese, country: Brazil}
+sv: {name: Swedish,    country: Sweden}
