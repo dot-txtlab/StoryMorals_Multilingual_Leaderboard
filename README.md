@@ -28,12 +28,10 @@ A model **succeeds** when it is high on (1) and low on (2).
 
 | Stays fixed | Changes each refresh |
 |---|---|
-| `data/human_morals.csv` — human-written morals (the ground truth) | `config/models.yaml` — the list of models to test |
-| `data/passages.csv` — the 196 story summaries (you can update this) | API keys in `.env` |
+| `data/human_morals.csv` — human-written morals | `config/models.yaml` — the list of models to test |
+| `data/passages.csv` — the 196 story summaries | API keys in `.env` |
 | `data/prompt_template.txt` — the socio-demographic prompt | |
 
-To update the leaderboard you normally only edit **`config/models.yaml`** and
-re-run. That's the plug-and-play part.
 
 ---
 
@@ -55,12 +53,6 @@ python scripts/run.py dashboard
 # ...or all three at once:
 python scripts/run.py all
 ```
-
-`evaluate` works **before** you have any API keys: it scores the human morals
-and the paper's own GPT-4o morals (bundled in `data/human_morals.csv`), so you
-can see the full pipeline and dashboard immediately. The GPT-4o point comes out
-as a *flattener* — human-like quality, low cultural diversity — reproducing the
-paper's headline finding.
 
 ---
 
@@ -209,8 +201,8 @@ so no translation step is needed). We then fit, per model,
 a **mixed-effects regression** of similarity with random intercepts for story,
 language(-pair), and embedding model — exactly as in the paper:
 
-- **H3 / alignment:** human–model vs. human–human pairs, same story & language.
-- **H4 / diversity:** model–model vs. human–human pairs, same story, *different*
+- **Test 1 (H3) / alignment:** human–model vs. human–human pairs, same story & language.
+- **Test 2 (H4) / diversity:** model–model vs. human–human pairs, same story, *different*
   languages. A positive coefficient = flattening.
 
 Pick embedders with `python scripts/run.py evaluate --embedders bge-m3 labse`.
