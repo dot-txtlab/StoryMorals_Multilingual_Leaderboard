@@ -1,25 +1,26 @@
 # Multilingual Story-Morals Leaderboard
 
-An automated, plug-and-play leaderboard that replicates the evaluation from
-**Wu & Piper, *Lessons Without Borders? Evaluating Cultural Alignment of LLMs
-Using Multilingual Story Moral Generation*** (Figures 3 & 4) and turns it into a
-public, periodically-updated dashboard.
+This project introduces story moral generation as a new benchmark for evaluating the cultural alignment of large language models. Rather than treating culture as factual knowledge to be memorized, it measures whether AI systems can reproduce the diverse ways people from different linguistic and cultural communities interpret stories.
 
-Models generate story morals for 14 stories shown in 14 languages. We then ask
+The project is detailed more fully in [**Wu & Piper, *Lessons Without Borders? Evaluating Cultural Alignment of LLMs Using Multilingual Story Moral Generation***](https://arxiv.org/abs/2604.08797)
+
+Here we present an automated leaderboard that replicates the evaluation from
+the paper and turns it into a public, periodically-updated dashboard.
+
+The underlying dataset consists of 588 human written morals for a collection of 14 stories translated into 14 languages. Each story is represented as a story summary from Wikipedia. Human annotators were recruited through the Prolific platform using demographic filters to ensure fluency and geographic location in specific regions associated with each language.
+
+Models generate story morals every story in each language. We then ask
 two questions:
 
-1. **Within-language alignment** Are a model's morals as similar to
+1. **Within-language alignment.** Are a model's morals as similar to
    human morals as humans are to each other? → it sits inside the *human band of
    variance*. **Higher is better.**
-2. **Cross-language diversity** Across languages, are a model's morals
+2. **Cross-language diversity.** Across languages, are a model's morals
    *more* similar to each other than humans' are? That means it restates one
    moral in many languages instead of reflecting cultural variation
    ("flattening"). **Lower is better.**
 
 A model **succeeds** when it is high on (1) and low on (2).
-
-👉 The dashboard is a static page in [`docs/`](docs/index.html) — enable GitHub
-Pages on the `docs/` folder to publish it.
 
 ---
 
