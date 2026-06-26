@@ -1,5 +1,9 @@
 # Multilingual Story-Morals Leaderboard
 
+### 🏆 [**View the live leaderboard →**](https://dot-txtlab.github.io/StoryMorals_Multilingual_Leaderboard/)
+
+[![leaderboard](https://img.shields.io/badge/leaderboard-live-3ddc97)](https://dot-txtlab.github.io/StoryMorals_Multilingual_Leaderboard/)
+
 This project introduces story moral generation as a new benchmark for evaluating the cultural alignment of large language models. Rather than treating culture as factual knowledge to be memorized, it measures whether AI systems can reproduce the diverse ways people from different linguistic and cultural communities interpret stories.
 
 The project is detailed more fully in [**Wu & Piper, *Lessons Without Borders? Evaluating Cultural Alignment of LLMs Using Multilingual Story Moral Generation***](https://arxiv.org/abs/2604.08797)
